@@ -1,5 +1,5 @@
-from flask import Flask, jsonify, request
-from flask_restful import Resource, Api
+from flask import Flask, jsonify, request # to get data
+from flask_restful import Resource, Api, reqparse # for get_data() argument parsing
 from flask_jwt import JWT, jwt_required # this is a decorator
 
 from security import authenticate, identity
@@ -26,6 +26,19 @@ items = []
 
 # class for item
 class Item(Resource):
+
+	# define parser here so that we only need to do it once
+	# for each call, need to do Item.parser.parse_args()
+
+	# define a parser and add "price"
+	# this is to make sure that when we are updating the dictionary,
+	# we do not overwrite fields other than "price"
+	parser = reqparse.RequestParser()
+	parser.add_argument("price",
+		type=float,
+		required=True,
+		help="This field cannot be left blank."
+	)
 
 	# get the item by unique name
 	@jwt_required() # need authentication for this action
@@ -57,7 +70,8 @@ class Item(Resource):
 		if item != []:
 			return {"message": "An item with name '{0}' already exists.".format(name)}, 400
 
-		data = request.get_json()
+		data = Item.parser.parse_args()
+
 		item = {
 			"name": name,
 			"price": data["price"]
@@ -73,7 +87,8 @@ class Item(Resource):
 
 	# create or update item
 	def put(self, name):
-		data = request.get_json()
+
+		data = Item.parser.parse_args()
 
 		# python3
 		# item = next(filter(lambda x: x["name"] == name, items), None)
@@ -116,3 +131,8 @@ api.add_resource(Items, "/items")
 
 # run
 app.run(port=5000, debug=True)
+
+
+
+
+
