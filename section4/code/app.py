@@ -46,32 +46,17 @@ class Item(Resource):
 		# next function will return the next item in the list
 		# if noting in there, will return None (default value)
 
-		# python3
-		# item = next(filter(lambda x: x["name"] == name, items), None) 
-		# return {"item": item}, 200 if item else 404
-
-		# python2
-		item = filter(lambda x: x["name"] == name, items)
-		if len(item) == 1:
-			return {"item": item[0]}, 200
-		else:
-			return {"item": None}, 404
+		item = next(filter(lambda x: x["name"] == name, items), None) 
+		return {"item": item}, 200 if item else 404
 
 	# create a new item
 	def post(self, name):
 		# if there is a match, return a message
 
-		# python3
-		# if next(filter(lambda x: x["name"] == name, items), None):
-		# 	return {"message": "An item with name '{0}' already exists.".format(name)}, 400
-
-		# python2
-		item = filter(lambda x: x["name"] == name, items)
-		if item != []:
+		if next(filter(lambda x: x["name"] == name, items), None):
 			return {"message": "An item with name '{0}' already exists.".format(name)}, 400
 
 		data = Item.parser.parse_args()
-
 		item = {
 			"name": name,
 			"price": data["price"]
@@ -90,31 +75,16 @@ class Item(Resource):
 
 		data = Item.parser.parse_args()
 
-		# python3
-		# item = next(filter(lambda x: x["name"] == name, items), None)
-		# if item is None:
-		# 	item = {
-		# 		"name": name,
-		# 		"price": data["price"]
-		# 	}
-		# 	items.append(item)
-		# else:
-		# 	item.update(data) # update the dictionary
-		# return item 
-
-		# python2
-		item = filter(lambda x: x["name"] == name, items)
-		if len(item) == 0:
+		item = next(filter(lambda x: x["name"] == name, items), None)
+		if item is None:
 			item = {
 				"name": name,
 				"price": data["price"]
 			}
 			items.append(item)
 		else:
-			item = item[0]
-			item.update(data)
-		return item
-
+			item.update(data) # update the dictionary
+		return item 
 
 
 # class for items
