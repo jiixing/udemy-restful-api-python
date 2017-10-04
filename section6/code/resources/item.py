@@ -3,12 +3,11 @@ from flask import jsonify
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
 
+from models.item import ItemModel
+
 
 # class for item
 class Item(Resource):
-
-	# define parser here so that we only need to do it once
-	# for each call, need to do Item.parser.parse_args()
 
 	# define a parser and add "price"
 	# this is to make sure that when we are updating the dictionary,
@@ -24,59 +23,28 @@ class Item(Resource):
 	# get the item by unique name from db
 	@jwt_required() # need authentication for this action
 	def get(self, name):
-		
-		item = self.find_by_name(name)
+		item = ItemModel.find_by_name(name) # ItemModel object
 
 		if item:
-			return item
+			return item.json()
+			
 		return {"message": "Item not found."}, 404
-
-
-	@classmethod
-	def find_by_name(cls, name):
-		connection = sqlite3.connect("data.db")
-		cursor = connection.cursor()
-		
-		query = "SELECT * FROM items WHERE name=?"
-		result = cursor.execute(query, (name,))
-		row = result.fetchone()
-		connection.close()
-
-		if row:
-			return {"item": {"name": row[0], "price": row[1]}}
 
 
 	# create a new item if not exist
 	def post(self, name):
-
-		if self.find_by_name(name):
+		if ItemModel.find_by_name(name):
 			return {"message": "An item with name '{}' already exists.".format(name)}, 400 # wrong with request
 		
 		data = Item.parser.parse_args()
-		item = {
-			"name": name,
-			"price": data["price"]
-		}
+		item = ItemModel(name, data["price"])
 
 		try:
-			self.insert(item)
+			item.insert()
 		except:
 			return {"message": "An error occurred inserting the item."}, 500 # internal server error
 
-		return item, 201 # code for creating
-
-
-	@classmethod
-	def insert(cls, item):
-
-		connection = sqlite3.connect("data.db")
-		cursor = connection.cursor()
-
-		query = "INSERT INTO items VALUES (?,?)"
-		cursor.execute(query, (item["name"], item["price"]))
-
-		connection.commit()
-		connection.close()
+		return item.json(), 201 # code for creating
 
 
 	# delete the item by unique name
@@ -98,40 +66,24 @@ class Item(Resource):
 	def put(self, name):
 		data = Item.parser.parse_args()
 
-		item = self.find_by_name(name)
-		updated_item = {
-				"name": name,
-				"price": data["price"]
-			}
+		item = ItemModel.find_by_name(name)
+		updated_item = ItemModel(name, data["price"])
 
 		if item is None:
 			try:
-				self.insert(updated_item)
+				updated_item.insert()
 			except:
 				return {"message": "An error occurred inserting the item."}, 500
 		else:
 			try:
-				self.update(updated_item)
+				updated_item.update()
 			except:
 				return {"message": "An error occurred updating the item."}, 500
-		return item 
-
-
-	@classmethod
-	def update(cls, item):
-
-		connection = sqlite3.connect("data.db")
-		cursor = connection.cursor()
-
-		query = "UPDATE items SET price=? WHERE name=?"
-		cursor.execute(query, (item["price"], item["name"]))
-
-		connection.commit()
-		connection.close()
+		return updated_item.json()
 
 
 # class for items
-class Items(Resource):
+class ItemList(Resource):
 
 	# get all items
 	def get(self):
@@ -140,14 +92,12 @@ class Items(Resource):
 
 		query = "select * FROM items"
 		result = cursor.execute(query)
-		rows = result.fetchall()
 
 		items = []
-		for row in rows:
-			items.append({
-				"name": row[0],
-				"price": row[1]
-				})
+		for row in result:
+			items.append({"name": row[0], "price": row[1]})
+		
+		connection.close()
 
 		return jsonify({"items": items})
 
