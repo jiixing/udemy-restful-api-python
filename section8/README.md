@@ -1,1 +1,1 @@
-check out [https://github.com/zhangyilun/udemy_api](https://github.com/zhangyilun/udemy_api) for code in this section.
+check out [https://github.com/zhangyilun/stores-rest-api](https://github.com/zhangyilun/stores-rest-api) for code in this section.
