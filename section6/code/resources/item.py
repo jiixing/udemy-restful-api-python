@@ -1,4 +1,3 @@
-import sqlite3
 from flask import jsonify
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
@@ -6,7 +5,6 @@ from flask_jwt import jwt_required
 from models.item import ItemModel
 
 
-# class for item
 class Item(Resource):
 
 	# define a parser and add "price"
@@ -17,6 +15,11 @@ class Item(Resource):
 		type=float,
 		required=True,
 		help="This field cannot be left blank."
+	)
+	parser.add_argument("store_id",
+		type=float,
+		required=True,
+		help="Every item needs a store id."
 	)
 
 
@@ -37,10 +40,10 @@ class Item(Resource):
 			return {"message": "An item with name '{}' already exists.".format(name)}, 400 # wrong with request
 		
 		data = Item.parser.parse_args()
-		item = ItemModel(name, data["price"])
+		item = ItemModel(name, **data)
 
 		try:
-			item.insert()
+			item.save_to_db()
 		except:
 			return {"message": "An error occurred inserting the item."}, 500 # internal server error
 
@@ -49,60 +52,33 @@ class Item(Resource):
 
 	# delete the item by unique name
 	def delete(self, name):
+		item = ItemModel.find_by_name(name)
+		if item:
+			item.delete_from_db()
 
-		connection = sqlite3.connect("data.db")
-		cursor = connection.cursor()
-
-		query = "DELETE FROM items WHERE name=?"
-		cursor.execute(query, (name,))
-
-		connection.commit()
-		connection.close()
-
-		return {"message": "Item '{0}' deleted.".format(name)}
+		return {"message": "Item deleted."}
 
 
 	# create or update item
 	def put(self, name):
 		data = Item.parser.parse_args()
-
 		item = ItemModel.find_by_name(name)
-		updated_item = ItemModel(name, data["price"])
 
 		if item is None:
-			try:
-				updated_item.insert()
-			except:
-				return {"message": "An error occurred inserting the item."}, 500
+			item = ItemModel(name, **data)
 		else:
-			try:
-				updated_item.update()
-			except:
-				return {"message": "An error occurred updating the item."}, 500
-		return updated_item.json()
+			item.price = data["price"]
+			item.store_id = data["store_id"]
+
+		item.save_to_db()
+
+		return item.json()
 
 
-# class for items
 class ItemList(Resource):
 
-	# get all items
+	# will return all items
 	def get(self):
-		connection = sqlite3.connect("data.db")
-		cursor = connection.cursor()
-
-		query = "select * FROM items"
-		result = cursor.execute(query)
-
-		items = []
-		for row in result:
-			items.append({"name": row[0], "price": row[1]})
-		
-		connection.close()
-
-		return jsonify({"items": items})
-
-
-
-
+		return {"items": [item.json() for item in ItemModel.query.all()]}
 
 

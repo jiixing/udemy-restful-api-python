@@ -1,16 +1,17 @@
+# the hard code way to create database
+
 import sqlite3
 
-connection = sqlite3.connect("data.db")
-cursor = connection.cursor()
+conn = sqlite3.connect("data.db")
+cur = conn.cursor()
 
 create_user_table = "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username text, password text)"
-cursor.execute(create_user_table)
+cur.execute(create_user_table)
 
-create_item_table = "CREATE TABLE IF NOT EXISTS items (name text, price real)"
-cursor.execute(create_item_table)
+create_item_table = "CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY, name text, price real)"
+cur.execute(create_item_table)
 
-cursor.execute("INSERT INTO items VALUES ('chair', 15.99)")
+cur.execute("INSERT INTO items (name, price) VALUES ('chair', 15.99)")
 
-connection.commit()
-
-connection.close()
+conn.commit()
+conn.close()
