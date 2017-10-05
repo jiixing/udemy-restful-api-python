@@ -156,3 +156,6 @@ fabric.propertiesd
 
 # err
 err_crash.dump
+
+# db
+*.db
